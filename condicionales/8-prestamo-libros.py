@@ -11,11 +11,13 @@ has_penalty = False
 user = input("Ingresa tu nombre: ")
 current_day = 1
 
+
 def verify_penalty():
     for book_id, borrow_day in borrowed_books.items():
         if current_day - borrow_day > 4:
             return True
     return False
+
 
 def show_main_menu():
     print(
@@ -27,6 +29,7 @@ def show_main_menu():
 5. Exit"""
     )
 
+
 def show_borrow_menu():
     print("\n<-- Books Available to Borrow -->")
     available = False
@@ -37,6 +40,7 @@ def show_borrow_menu():
     if not available:
         print("No books available to borrow.")
     print("0. Back to Main Menu\n")
+
 
 def show_return_menu():
     print("\n<-- Your Borrowed Books -->")
@@ -54,6 +58,9 @@ def borrow_book():
     if verify_penalty():
         print("Please first pay your penalty.\n")
         return
+    elif len(borrowed_books) >= 3:
+        print("You can only borrow 3 books")
+        return
 
     show_borrow_menu()
     book_id = int(input("Choose a book: "))
@@ -64,6 +71,7 @@ def borrow_book():
         return
     else:
         print("Invalid choice.\n")
+
 
 def return_book():
     global has_penalty
@@ -77,6 +85,7 @@ def return_book():
             return
         else:
             print("Invalid choice.\n")
+
 
 def advance_day():
     global current_day, has_penalty
