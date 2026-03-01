@@ -51,9 +51,7 @@ def show_return_menu():
 
 
 def borrow_book():
-    global has_penalty
-    has_penalty = verify_penalty()
-    if has_penalty:
+    if verify_penalty():
         print("Please first pay your penalty.\n")
         return
 
@@ -73,11 +71,7 @@ def return_book():
     if borrowed_books:
         book_id = int(input("Choose a book to return: "))
         if book_id in borrowed_books:
-            if current_day - borrowed_books[book_id] > 4:
-                has_penalty = True
-                print("This book was overdue! You now have a penalty.\n")
-            else:
-                print(f"'{books[book_id]}' returned successfully.\n")
+            print(f"'{books[book_id]}' returned successfully.\n")
             borrowed_books.pop(book_id)
         elif book_id == 0:
             return
