@@ -1,8 +1,7 @@
 from exceptions import NegativeNumberException
-import os
+import service
 
 
-# show menu option and return selected option
 def get_menu_option():
     try:
         return int(input("Select an option: "))
@@ -11,16 +10,32 @@ def get_menu_option():
         return None
 
 
-# ask the user for the product name
 def get_product_name():
     name = input("Enter the product name: ").strip()
     if name:
         return name
-    else:
-        print("Product name cannot be empty.")
+    print("Product name cannot be empty.")
 
 
-# ask the user for the product price and handle exceptions
+def get_id():
+    try:
+        id = int(input("Enter the id to search: "))
+        if id <= 0:
+            raise NegativeNumberException("Id must be greater than zero")
+        return id
+    except ValueError:
+        print("Id must be an int value")
+    except NegativeNumberException as e:
+        print(e)
+
+
+def validate_id():
+    id = None
+    while id is None:
+        id = get_id()
+    return id
+
+
 def get_price():
     try:
         price = float(input("Enter the product price: "))
@@ -31,11 +46,9 @@ def get_price():
         print("Invalid input. Please enter a numeric value.")
     except NegativeNumberException as e:
         print(e)
-
     return None
 
 
-# ask the user for the product quantity and handle exceptions
 def get_quantity():
     try:
         quantity = int(input("Enter the quantity: "))
@@ -46,33 +59,44 @@ def get_quantity():
         print("Invalid input. Please enter a numeric value.")
     except NegativeNumberException as e:
         print(e)
-
     return None
 
 
-# create and return a product dictionary
-def create_product():
-    name = None
-    while name is None:
-        name = get_product_name()
-
-    price = None
-    while price is None:
-        price = get_price()
-
+def validate_quantity():
     quantity = None
     while quantity is None:
         quantity = get_quantity()
-
-    return {
-        "name": name,
-        "price": price,
-        "quantity": quantity,
-        "total_line": price * quantity,
-    }
+    return quantity
 
 
-# receive a list of products, calculate the total cost and print product information
+def validate_price():
+    price = None
+    while price is None:
+        price = get_price()
+    return price
+
+
+def validate_name():
+    name = None
+    while name is None:
+        name = get_product_name()
+    return name
+
+
+def create_product(products: list):
+    name = validate_name()
+    price = validate_price()
+    quantity = validate_quantity()
+    service.add_product(products, name, price, quantity)
+
+
+def empty_inventory(products):
+    if not products:
+        print("Inventory is empty.")
+        return True
+    return False
+
+
 def print_products(products):
     if empty_inventory(products):
         return
@@ -101,14 +125,6 @@ def show_statics_options():
     )
 
 
-def empty_inventory(products):
-    total = len(products)
-    if total <= 0:
-        print("Inventory is empty.")
-        return True
-    return False
-
-
 def total_inventory(products):
     if empty_inventory(products):
         return None
@@ -133,47 +149,103 @@ def print_total_inventory(products):
         print(f"Total number of products: {total}")
 
 
-# handle the flow program invoking all required functions
+def change_attribute(name_change: str):
+    change = ""
+    while change not in ("y", "n"):
+        change = input(f"Want to change the {name_change}? (y/n): ").strip().lower()
+    return change == "y"
+
+
+def update_flow(products):
+    id = validate_id()
+
+    fields = {
+        "name": validate_name,
+        "price": validate_price,
+        "quantity": validate_quantity,
+    }
+
+    updates = {
+        field: validator()
+        for field, validator in fields.items()
+        if change_attribute(field)
+    }
+
+    if not updates:
+        print("No changes made.")
+        return
+
+    ok = service.update_product(products, id, updates)
+
+    if ok:
+        print("Product updated successfully")
+    else:
+        print("Product not found")
+
+
+def handle_delete(products):
+    id = validate_id()
+    ok = service.delete_product(products, id)
+    if ok:
+        print("product deleted sucessfully")
+    else:
+        print("Operation failed")
+
+
+def show_main_menu():
+    print(
+        "\nMain Menu:\n"
+        "1. Add a product\n"
+        "2. Show inventory\n"
+        "3. Show statistics\n"
+        "4. Search product by id\n"
+        "5. Update product\n"
+        "6. Delete product\n"
+        "7. Exit"
+    )
+
+
+def handle_statistics(products):
+    print("\n".join(service.statics(products)))
+
+def handle_search(products):
+    id = validate_id()
+    product = service.search_product_by_id(products, id)
+
+    if product:
+        service.print_product(product)
+    else:
+        print("Product not found")
+
+
 def main():
     products = []
     continue_ = True
-
     while continue_:
-        print(
-            "\nMain Menu:\n"
-            "1. Add a product\n"
-            "2. Show inventory\n"
-            "3. Show statistics\n"
-            "4. Exit"
-        )
+        show_main_menu()
         option = get_menu_option()
 
         match option:
             case 1:
-                product = create_product()
-                products.append(product)
+                create_product(products)
                 print("Product added successfully.")
 
             case 2:
-                print_products(products)
+                service.show_inventory(products)
 
             case 3:
-                continue_statics = True
-                while continue_statics:
-                    show_statics_options()
-                    statics_options = get_menu_option()
-
-                    match statics_options:
-                        case 1:
-                            print_total_price_products(products)
-                        case 2:
-                            print_total_inventory(products)
-                        case 3:
-                            continue_statics = False
-                        case _:
-                            print("Invalid option. Please try again.")
+                handle_statistics(products)
 
             case 4:
+                handle_search(products)
+
+            case 5:
+                update_flow(products)
+
+            case 6:
+                handle_delete(products)
+
+            case 7:
                 continue_ = False
 
             case _:
