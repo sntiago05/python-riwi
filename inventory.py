@@ -1,5 +1,6 @@
 from exceptions import NegativeNumberException
 import service
+import handle_files
 
 
 def get_menu_option():
@@ -10,11 +11,11 @@ def get_menu_option():
         return None
 
 
-def get_product_name():
-    name = input("Enter the product name: ").strip()
+def get_name(type_: str):
+    name = input(f"Enter the {type_} name: ").strip()
     if name:
         return name
-    print("Product name cannot be empty.")
+    print(f"{type_.capitalize()} name cannot be empty.")
 
 
 def get_id():
@@ -76,77 +77,18 @@ def validate_price():
     return price
 
 
-def validate_name():
+def validate_name(type_: str):
     name = None
     while name is None:
-        name = get_product_name()
+        name = get_name(type_)
     return name
 
 
-def create_product(products: list):
-    name = validate_name()
+def hanlde_create_product(products: list):
+    name = validate_name("product")
     price = validate_price()
     quantity = validate_quantity()
     service.add_product(products, name, price, quantity)
-
-
-def empty_inventory(products):
-    if not products:
-        print("Inventory is empty.")
-        return True
-    return False
-
-
-def print_products(products):
-    if empty_inventory(products):
-        return
-
-    print(f"\n{'='*60}")
-    print("INVENTORY LIST")
-    print(f"{'='*60}")
-
-    for product in products:
-        print(
-            f"Product: {product['name']} | "
-            f"Unit Price: ${product['price']:.2f} | "
-            f"Quantity: {product['quantity']} | "
-            f"Total: ${product['total_line']:.2f}"
-        )
-
-    print(f"{'='*60}\n")
-
-
-def show_statics_options():
-    print(
-        "\nStatistics Menu:\n"
-        "1. Total inventory value\n"
-        "2. Total number of products\n"
-        "3. Return to main menu"
-    )
-
-
-def total_inventory(products):
-    if empty_inventory(products):
-        return None
-    return len(products)
-
-
-def total_price_products(products):
-    if empty_inventory(products):
-        return None
-    return sum(p["total_line"] for p in products)
-
-
-def print_total_price_products(products):
-    total = total_price_products(products)
-    if total is not None:
-        print(f"Total inventory value: ${total:.2f}")
-
-
-def print_total_inventory(products):
-    total = total_inventory(products)
-    if total is not None:
-        print(f"Total number of products: {total}")
 
 
 def change_attribute(name_change: str):
@@ -154,6 +96,13 @@ def change_attribute(name_change: str):
     while change not in ("y", "n"):
         change = input(f"Want to change the {name_change}? (y/n): ").strip().lower()
     return change == "y"
+
+
+def include_header():
+    include = None
+    while include not in ("y", "n"):
+        include = input("Want to include headers? y/n").lower()
+    return include == "y"
 
 
 def update_flow(products):
@@ -192,6 +141,12 @@ def handle_delete(products):
         print("Operation failed")
 
 
+def handle_save_csv(products):
+    header = include_header()
+    path = validate_name("path")
+    handle_files.save_csv(products, path, header)
+
+
 def show_main_menu():
     print(
         "\nMain Menu:\n"
@@ -201,12 +156,14 @@ def show_main_menu():
         "4. Search product by id\n"
         "5. Update product\n"
         "6. Delete product\n"
-        "7. Exit"
+        "7. Save inventory\n"
+        "8. Exit"
     )
 
 
 def handle_statistics(products):
     print("\n".join(service.statics(products)))
+
 
 def handle_search(products):
     id = validate_id()
@@ -217,7 +174,8 @@ def handle_search(products):
     else:
         print("Product not found")
 
-
+def handle_load_csv():
+    pass
 def main():
     products = []
     continue_ = True
@@ -227,7 +185,7 @@ def main():
 
         match option:
             case 1:
-                create_product(products)
+                hanlde_create_product(products)
                 print("Product added successfully.")
 
             case 2:
@@ -246,13 +204,15 @@ def main():
                 handle_delete(products)
 
             case 7:
+                handle_save_csv(products)
+
+            case 8:
+
+            case 9:
                 continue_ = False
 
             case _:
                 print("Invalid option. Please try again.")
-
-    print("\nFinal Inventory:")
-    print_products(products)
 
 
 if __name__ == "__main__":
