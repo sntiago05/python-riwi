@@ -3,216 +3,255 @@ import service
 import handle_files
 
 
-def get_menu_option():
-    try:
-        return int(input("Select an option: "))
-    except ValueError:
-        print("Invalid input. Please enter a valid number.")
-        return None
+def get_int(msg: str):
+    """
+    Read a positive integer from user input.
+
+    Args:
+        msg (str): Input message.
+
+    Returns:
+        int: Valid integer greater than 0.
+    """
+    value = None
+    while value is None:
+        try:
+            num = int(input(msg))
+            if num <= 0:
+                raise NegativeNumberException("Value must be > 0")
+            value = num
+        except Exception as e:
+            print(e)
+    return value
 
 
-def get_name(type_: str):
-    name = input(f"Enter the {type_} name: ").strip()
-    if name:
-        return name
-    print(f"{type_.capitalize()} name cannot be empty.")
+def get_float(msg: str):
+    """
+    Read a positive float from user input.
+
+    Args:
+        msg (str): Input message.
+
+    Returns:
+        float: Valid number greater than 0.
+    """
+    value = None
+    while value is None:
+        try:
+            num = float(input(msg))
+            if num <= 0:
+                raise NegativeNumberException("Value must be > 0")
+            value = num
+        except Exception as e:
+            print(e)
+    return value
 
 
-def get_id():
-    try:
-        id = int(input("Enter the id to search: "))
-        if id <= 0:
-            raise NegativeNumberException("Id must be greater than zero")
-        return id
-    except ValueError:
-        print("Id must be an int value")
-    except NegativeNumberException as e:
-        print(e)
+def get_str(msg: str):
+    """
+    Read a non-empty string from user input.
+
+    Args:
+        msg (str): Input message.
+
+    Returns:
+        str: Non-empty text.
+    """
+    value = None
+    while value is None:
+        text = input(msg).strip()
+        if text:
+            value = text
+        else:
+            print("Value cannot be empty")
+    return value
 
 
-def validate_id():
-    id = None
-    while id is None:
-        id = get_id()
-    return id
+def ask_yes_no(msg: str):
+    """
+    Ask a yes/no question.
+
+    Args:
+        msg (str): Prompt message.
+
+    Returns:
+        bool: True for 'y', False for 'n'.
+    """
+    option = None
+    while option not in ("y", "n"):
+        option = input(msg).lower()
+    return option == "y"
 
 
-def get_price():
-    try:
-        price = float(input("Enter the product price: "))
-        if price <= 0:
-            raise NegativeNumberException("Price must be greater than zero.")
-        return price
-    except ValueError:
-        print("Invalid input. Please enter a numeric value.")
-    except NegativeNumberException as e:
-        print(e)
-    return None
+def handle_create(products: list[dict]):
+    """
+    Handle product creation flow.
 
-
-def get_quantity():
-    try:
-        quantity = int(input("Enter the quantity: "))
-        if quantity <= 0:
-            raise NegativeNumberException("Quantity must be greater than zero.")
-        return quantity
-    except ValueError:
-        print("Invalid input. Please enter a numeric value.")
-    except NegativeNumberException as e:
-        print(e)
-    return None
-
-
-def validate_quantity():
-    quantity = None
-    while quantity is None:
-        quantity = get_quantity()
-    return quantity
-
-
-def validate_price():
-    price = None
-    while price is None:
-        price = get_price()
-    return price
-
-
-def validate_name(type_: str):
-    name = None
-    while name is None:
-        name = get_name(type_)
-    return name
-
-
-def hanlde_create_product(products: list):
-    name = validate_name("product")
-    price = validate_price()
-    quantity = validate_quantity()
+    Args:
+        products (list[dict]): Product list.
+    """
+    name = get_str("Name: ")
+    price = get_float("Price: ")
+    quantity = get_int("Quantity: ")
     service.add_product(products, name, price, quantity)
+    print("Product added.")
 
 
-def change_attribute(name_change: str):
-    change = ""
-    while change not in ("y", "n"):
-        change = input(f"Want to change the {name_change}? (y/n): ").strip().lower()
-    return change == "y"
+def handle_update(products: list[dict]):
+    """
+    Handle product update flow.
 
+    Args:
+        products (list[dict]): Product list.
+    """
+    id = get_int("Enter product id: ")
 
-def include_header():
-    include = None
-    while include not in ("y", "n"):
-        include = input("Want to include headers? y/n").lower()
-    return include == "y"
-
-
-def update_flow(products):
-    id = validate_id()
-
-    fields = {
-        "name": validate_name,
-        "price": validate_price,
-        "quantity": validate_quantity,
-    }
-
-    updates = {
-        field: validator()
-        for field, validator in fields.items()
-        if change_attribute(field)
-    }
+    updates = {}
+    if ask_yes_no("Change name? (y/n): "):
+        updates["name"] = get_str("New name: ")
+    if ask_yes_no("Change price? (y/n): "):
+        updates["price"] = get_float("New price: ")
+    if ask_yes_no("Change quantity? (y/n): "):
+        updates["quantity"] = get_int("New quantity: ")
 
     if not updates:
-        print("No changes made.")
+        print("No changes.")
         return
 
-    ok = service.update_product(products, id, updates)
-
-    if ok:
-        print("Product updated successfully")
+    if service.update_product(products, id, updates):
+        print("Updated successfully")
     else:
         print("Product not found")
 
 
-def handle_delete(products):
-    id = validate_id()
-    ok = service.delete_product(products, id)
-    if ok:
-        print("product deleted sucessfully")
+def handle_delete(products: list[dict]):
+    """
+    Handle product deletion flow.
+
+    Args:
+        products (list[dict]): Product list.
+    """
+    id = get_int("Enter product id: ")
+    if service.delete_product(products, id):
+        print("Deleted")
     else:
-        print("Operation failed")
+        print("Not found")
 
 
-def handle_save_csv(products):
-    header = include_header()
-    path = validate_name("path")
-    handle_files.save_csv(products, path, header)
+def handle_search(products: list[dict]):
+    """
+    Handle product search flow.
 
-
-def show_main_menu():
-    print(
-        "\nMain Menu:\n"
-        "1. Add a product\n"
-        "2. Show inventory\n"
-        "3. Show statistics\n"
-        "4. Search product by id\n"
-        "5. Update product\n"
-        "6. Delete product\n"
-        "7. Save inventory\n"
-        "8. Exit"
-    )
-
-
-def handle_statistics(products):
-    print("\n".join(service.statics(products)))
-
-
-def handle_search(products):
-    id = validate_id()
+    Args:
+        products (list[dict]): Product list.
+    """
+    id = get_int("Enter product id: ")
     product = service.search_product_by_id(products, id)
-
     if product:
         service.print_product(product)
     else:
-        print("Product not found")
+        print("Not found")
 
-def handle_load_csv():
-    pass
+
+def handle_save(products: list[dict]):
+    """
+    Handle saving inventory to CSV.
+
+    Args:
+        products (list[dict]): Product list.
+    """
+    path = get_str("Enter file path: ")
+    header = ask_yes_no("Include header? (y/n): ")
+    handle_files.save_csv(products, path, header)
+
+
+def handle_load(products: list[dict]):
+    """
+    Handle loading inventory from CSV.
+
+    Args:
+        products (list[dict]): Product list.
+    """
+    path = get_str("Enter file path: ")
+    new_data = handle_files.load_csv(path)
+
+    if not new_data:
+        return
+
+    overwrite = ask_yes_no("Overwrite inventory? (y/n): ")
+
+    if overwrite:
+        products.clear()
+        products.extend(new_data)
+        print("Inventory replaced.")
+    else:
+        for new in new_data:
+            existing = next((p for p in products if p["id"] == new["id"]), None)
+
+            if existing:
+                existing["quantity"] += new["quantity"]
+                existing["price"] = new["price"]
+                existing["total_line"] = existing["price"] * existing["quantity"]
+            else:
+                products.append(new)
+
+        print("Inventory merged.")
+
+
+def show_menu():
+    """
+    Display the main menu.
+    """
+    print("\nMENU")
+    print("1. Add")
+    print("2. Show")
+    print("3. Stats")
+    print("4. Search")
+    print("5. Update")
+    print("6. Delete")
+    print("7. Save CSV")
+    print("8. Load CSV")
+    print("9. Exit")
+
+
 def main():
+    """
+    Run the main application loop.
+    """
     products = []
-    continue_ = True
-    while continue_:
-        show_main_menu()
-        option = get_menu_option()
+    running = True
+
+    while running:
+        show_menu()
+
+        try:
+            option = int(input("Option: "))
+        except:
+            print("Invalid input")
+            continue
 
         match option:
             case 1:
-                hanlde_create_product(products)
-                print("Product added successfully.")
-
+                handle_create(products)
             case 2:
                 service.show_inventory(products)
-
             case 3:
-                handle_statistics(products)
-
+                print("\n".join(service.statics(products)))
             case 4:
                 handle_search(products)
-
             case 5:
-                update_flow(products)
-
+                handle_update(products)
             case 6:
                 handle_delete(products)
-
             case 7:
-                handle_save_csv(products)
-
+                handle_save(products)
             case 8:
-
+                handle_load(products)
             case 9:
-                continue_ = False
-
+                print("Bye!")
+                running = False
             case _:
-                print("Invalid option. Please try again.")
+                print("Invalid option")
 
 
 if __name__ == "__main__":
